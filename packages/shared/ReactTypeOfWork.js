@@ -11,9 +11,12 @@ export type TypeOfWork = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export const IndeterminateComponent = 0; // Before we know whether it is functional or class
 export const FunctionalComponent = 1;
+// 继承自React.Component的类的实例
 export const ClassComponent = 2;
+// ReactDOM.render()时的根节点
 export const HostRoot = 3; // Root of a host tree. Could be nested inside another node.
 export const HostPortal = 4; // A subtree. Could be an entry point to a different renderer.
+// ClassComponent的组成部分
 export const HostComponent = 5;
 export const HostText = 6;
 export const CallComponent = 7;

@@ -148,6 +148,8 @@ const ReactElement = function(type, key, ref, self, source, owner, props) {
     });
     // Two elements created in two different places should be considered
     // equal for testing purposes and therefore we hide it from enumeration.
+    //
+    // 对于测试目的，在两个不同位置创建的两个元素应该被认为是相等的，因此我们将其隐藏在枚举中。
     Object.defineProperty(element, '_source', {
       configurable: false,
       enumerable: false,

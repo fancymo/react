@@ -25,6 +25,8 @@ const SUBSEPARATOR = ':';
 /**
  * Escape and wrap key so it is safe to use as a reactid
  *
+ * 转换 key 以至于可以被安全的用作 reactid
+ *
  * @param {string} key to be escaped.
  * @return {string} the escaped key.
  */
@@ -253,7 +255,7 @@ function getComponentKey(component, index) {
     component !== null &&
     component.key != null
   ) {
-    // Explicit key
+    // Explicit key 显式的key
     return escape(component.key);
   }
   // Implicit key determined by the index in the set

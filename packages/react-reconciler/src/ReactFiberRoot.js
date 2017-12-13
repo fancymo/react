@@ -23,12 +23,15 @@ export type Batch = {
 
 export type FiberRoot = {
   // Any additional information from the host associated with this root.
+  // container 相关的信息，包括 _reactRootContainer 等
   containerInfo: any,
   // Used only by persistent updates.
   pendingChildren: any,
   // The currently active root fiber. This is the mutable root of the tree.
+  // 当前 active 状态的 root fiber
   current: Fiber,
   // Remaining expiration time on this root.
+  // 这个 root 上剩余过期时间
   remainingExpirationTime: ExpirationTime,
   // Determines if this root can be committed.
   isReadyForCommit: boolean,
@@ -38,6 +41,7 @@ export type FiberRoot = {
   // the renderer.
   finishedWork: Fiber | null,
   // Top context object, used by renderSubtreeIntoContainer
+  // 上下文，用来把 sub tree 渲染到 container
   context: Object | null,
   pendingContext: Object | null,
   // Determines if we should attempt to hydrate on the initial mount

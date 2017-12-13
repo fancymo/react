@@ -66,6 +66,7 @@ export type Fiber = {|
   // break this out into a separate object to avoid copying so much to the
   // alternate versions of the tree. We put this on a single object for now to
   // minimize the number of objects created during the initial render.
+  // 一个实例被一个组件的多个版本共享
 
   // Tag identifying the type of fiber.
   tag: TypeOfWork,

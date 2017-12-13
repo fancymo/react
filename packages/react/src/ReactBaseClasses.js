@@ -13,6 +13,7 @@ import ReactNoopUpdateQueue from './ReactNoopUpdateQueue';
 
 /**
  * Base class helpers for the updating state of a component.
+ * 提供基础的类协助更新组件状态
  */
 function Component(props, context, updater) {
   this.props = props;
@@ -29,6 +30,8 @@ Component.prototype.isReactComponent = {};
  * Sets a subset of the state. Always use this to mutate
  * state. You should treat `this.state` as immutable.
  *
+ * 设置 state 的子集，this.state 应该不可变。
+ *
  * There is no guarantee that `this.state` will be immediately updated, so
  * accessing `this.state` after calling this method may return the old value.
  *
@@ -37,12 +40,17 @@ Component.prototype.isReactComponent = {};
  * callback that will be executed when the call to setState is actually
  * completed.
  *
+ * 不能保证 `setState` 是同步调用的，它们最终也许会被批量处理。
+ *
  * When a function is provided to setState, it will be called at some point in
  * the future (not synchronously). It will be called with the up to date
  * component arguments (state, props, context). These values can be different
  * from this.* because your function may be called after receiveProps but before
  * shouldComponentUpdate, and this new state, props, and context will not yet be
  * assigned to this.
+ *
+ * 当一个提供一个函数给 setState，它将在未来某一点被调用(不是同步)，this.* 的值可能会不同，
+ * 因为提供的函数也许会在 `receiveProps` 之后 `shouldComponentUpdate` 之前执行。
  *
  * @param {object|function} partialState Next partial state or function to
  *        produce next partial state to be merged with current state.
@@ -70,6 +78,8 @@ Component.prototype.setState = function(partialState, callback) {
  *
  * This will not invoke `shouldComponentUpdate`, but it will invoke
  * `componentWillUpdate` and `componentDidUpdate`.
+ *
+ * 子组件的 `shouldComponentUpdate` 会被触发。
  *
  * @param {?function} callback Called after update is complete.
  * @final
@@ -132,7 +142,10 @@ function PureComponent(props, context, updater) {
 
 function ComponentDummy() {}
 ComponentDummy.prototype = Component.prototype;
+
+// 继承自 Component
 const pureComponentPrototype = (PureComponent.prototype = new ComponentDummy());
+// 避免原型链混乱
 pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
 Object.assign(pureComponentPrototype, Component.prototype);
@@ -148,6 +161,7 @@ function AsyncComponent(props, context, updater) {
   this.updater = updater || ReactNoopUpdateQueue;
 }
 
+// 继承自 Component
 const asyncComponentPrototype = (AsyncComponent.prototype = new ComponentDummy());
 asyncComponentPrototype.constructor = AsyncComponent;
 // Avoid an extra prototype jump for these methods.

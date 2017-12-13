@@ -12,9 +12,7 @@ const didWarnStateUpdateForUnmountedComponent = {};
 function warnNoop(publicInstance, callerName) {
   if (__DEV__) {
     const constructor = publicInstance.constructor;
-    const componentName =
-      (constructor && (constructor.displayName || constructor.name)) ||
-      'ReactClass';
+    // const componentName = (constructor && (constructor.displayName || constructor.name)) || 'ReactClass';
     const warningKey = `${componentName}.${callerName}`;
     if (didWarnStateUpdateForUnmountedComponent[warningKey]) {
       return;
@@ -34,10 +32,13 @@ function warnNoop(publicInstance, callerName) {
 
 /**
  * This is the abstract API for an update queue.
+ *
+ * 更新队列的抽象 API
  */
 const ReactNoopUpdateQueue = {
   /**
    * Checks whether or not this composite component is mounted.
+   * 检查组件是否 mount
    * @param {ReactClass} publicInstance The instance we want to test.
    * @return {boolean} True if mounted, false otherwise.
    * @protected
