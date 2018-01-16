@@ -28,19 +28,24 @@ var validateDOMNesting = require('validateDOMNesting');
  *
  * TODO: Investigate representing React components in the DOM with text nodes.
  *
+ * 创建文本组件，这是 ReactText，并不是 Reat Element
+ *
  * @class ReactDOMTextComponent
  * @extends ReactComponent
  * @internal
  */
 var ReactDOMTextComponent = function(text) {
   // TODO: This is really a ReactText (ReactNode), not a ReactElement
+  // 保存当前的字符串
   this._currentElement = text;
   this._stringText = '' + text;
   // ReactDOMComponentTree uses these:
+  // ReactDOMComponentTree 需要使用的参数
   this._hostNode = null;
   this._hostParent = null;
 
   // Properties
+  // 属性
   this._domID = 0;
   this._mountIndex = 0;
   this._closingComment = null;
@@ -81,25 +86,33 @@ Object.assign(ReactDOMTextComponent.prototype, {
     var closingValue = ' /react-text ';
     this._domID = domID;
     this._hostParent = hostParent;
+
+    // 如果使用 createElement 创建文本标签，则该文本会带上标签和 domID
+    // openingComment + stringText + closingComment
     if (transaction.useCreateElement) {
       var ownerDocument = hostContainerInfo._ownerDocument;
       var openingComment = ownerDocument.createComment(openingValue);
       var closingComment = ownerDocument.createComment(closingValue);
       var lazyTree = DOMLazyTree(ownerDocument.createDocumentFragment());
+
+      // 开始标签
       DOMLazyTree.queueChild(lazyTree, DOMLazyTree(openingComment));
+      // 如果是文本类型，则创建文本节点
       if (this._stringText) {
         DOMLazyTree.queueChild(
           lazyTree,
           DOMLazyTree(ownerDocument.createTextNode(this._stringText)),
         );
       }
+      // 结束标签
       DOMLazyTree.queueChild(lazyTree, DOMLazyTree(closingComment));
       ReactDOMComponentTree.precacheNode(this, openingComment);
       this._closingComment = closingComment;
       return lazyTree;
-    } else {
+    } else { // escapedText
       var escapedText = escapeTextContentForBrowser(this._stringText);
 
+      // 静态界面下直接返回文本
       if (transaction.renderToStaticMarkup) {
         // Normally we'd wrap this between comment nodes for the reasons stated
         // above, but since this is a situation where React won't take over
@@ -107,6 +120,7 @@ Object.assign(ReactDOMTextComponent.prototype, {
         return escapedText;
       }
 
+      // 如果不是通过 createElement 创建的文本，则将标签和属性注视掉，直接返回文本内容
       return (
         '<!--' +
         openingValue +
@@ -122,6 +136,7 @@ Object.assign(ReactDOMTextComponent.prototype, {
   /**
    * Updates this component by updating the text content.
    *
+   * 更新文本内容
    * @param {ReactText} nextText The next text content
    * @param {ReactReconcileTransaction} transaction
    * @internal

@@ -455,6 +455,9 @@ var globalIdCounter = 1;
  * The `style` property functions differently from the DOM API. It accepts an
  * object mapping of style properties to values.
  *
+ * 1. 属性的更新，包括更新样式、更新属性、处理事件
+ * 2. 字节的的更新，包括更新内容、更新子节点，涉及 diff 算法
+ *
  * @constructor ReactDOMComponent
  * @extends ReactMultiChild
  */
@@ -487,6 +490,9 @@ ReactDOMComponent.Mixin = {
   /**
    * Generates root tag markup then recurses. This method has side effects and
    * is not idempotent.
+   *
+   * ReactDOMComponent 首先生成标记和标签，
+   * 通过 this._createOpenTagMarkupAndPutListeners 处理 DOM 节点的属性和事件
    *
    * @internal
    * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
@@ -686,6 +692,13 @@ ReactDOMComponent.Mixin = {
    * This method has side effects because events get registered.
    *
    * Iterating over object properties is faster than iterating over arrays.
+   *
+   * 1. 如果存在事件，则针对当前的节点添加事件代理，调用 enqueuePutListener
+   * 2. 如果存在样式，首先对样式进行合并操作，Object.assign({}, props.style)，然后通过
+   *    CSSPropertyOperations.createMarkupForStyles 创建样式
+   * 3. 通过 DOMPropertyOperations.createMarkupForProperty 创建属性
+   * 4. 通过 DOMPropertyOperations.createMarkupForID 创建唯一表识
+   *
    * @see http://jsperf.com/obj-vs-arr-iteration
    *
    * @private
@@ -695,7 +708,7 @@ ReactDOMComponent.Mixin = {
    */
   _createOpenTagMarkupAndPutListeners: function(transaction, props) {
     var ret = '<' + this._currentElement.type;
-
+    // 拼凑出属性
     for (var propKey in props) {
       if (!props.hasOwnProperty(propKey)) {
         continue;
@@ -705,6 +718,7 @@ ReactDOMComponent.Mixin = {
         continue;
       }
       if (registrationNameModules.hasOwnProperty(propKey)) {
+        // 针对当前的节点添加事件代理
         if (propValue) {
           enqueuePutListener(this, propKey, propValue, transaction);
         }
@@ -715,6 +729,7 @@ ReactDOMComponent.Mixin = {
               // See `_updateDOMProperties`. style block
               this._previousStyle = propValue;
             }
+            // 合并样式
             propValue = this._previousStyleCopy = Object.assign(
               {},
               props.style,
@@ -725,6 +740,7 @@ ReactDOMComponent.Mixin = {
             this,
           );
         }
+        // 创建属性标识
         var markup = null;
         if (this._tag != null && isCustomComponent(this._tag, props)) {
           if (!RESERVED_PROPS.hasOwnProperty(propKey)) {
@@ -747,10 +763,11 @@ ReactDOMComponent.Mixin = {
 
     // For static pages, no need to put React ID and checksum. Saves lots of
     // bytes.
+    // 对于静态界面，不需要设置 react-id，可以节省大量字节
     if (transaction.renderToStaticMarkup) {
       return ret;
     }
-
+    // 设置 react-id
     if (!this._hostParent) {
       ret += ' ' + DOMPropertyOperations.createMarkupForRoot();
     }
@@ -760,6 +777,8 @@ ReactDOMComponent.Mixin = {
 
   /**
    * Creates markup for the content between the tags.
+   *
+   * 处理 DOM 节点的内容
    *
    * @private
    * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
@@ -771,6 +790,7 @@ ReactDOMComponent.Mixin = {
     var ret = '';
 
     // Intentional use of != to avoid catching zero/false.
+    // 获取子节点渲染出的内容
     var innerHTML = props.dangerouslySetInnerHTML;
     if (innerHTML != null) {
       if (innerHTML.__html != null) {
@@ -788,6 +808,7 @@ ReactDOMComponent.Mixin = {
           setAndValidateContentChildDev.call(this, contentToUse);
         }
       } else if (childrenToUse != null) {
+        // 对子节点进行初始化渲染
         var mountImages = this.mountChildren(
           childrenToUse,
           transaction,
@@ -796,6 +817,7 @@ ReactDOMComponent.Mixin = {
         ret = mountImages.join('');
       }
     }
+    // 是否需要换行
     if (newlineEatingTags[this._tag] && ret.charAt(0) === '\n') {
       // text/html ignores the first character in these tags if it's a newline
       // Prefer to break application/xml over text/html (for now) by adding
@@ -861,6 +883,8 @@ ReactDOMComponent.Mixin = {
   receiveComponent: function(nextElement, transaction, context) {
     var prevElement = this._currentElement;
     this._currentElement = nextElement;
+
+    // 更新 DOM 节点属性
     this.updateComponent(transaction, prevElement, nextElement, context);
   },
 
@@ -898,7 +922,9 @@ ReactDOMComponent.Mixin = {
     }
 
     assertValidProps(this, nextProps);
+    // 更新属性
     this._updateDOMProperties(lastProps, nextProps, transaction);
+    // 更新DOM内容和子节点
     this._updateDOMChildren(lastProps, nextProps, transaction, context);
 
     switch (this._tag) {
@@ -934,6 +960,8 @@ ReactDOMComponent.Mixin = {
    *       do not change for a given reconciliation.
    * TODO: Benchmark areas that can be improved with caching.
    *
+   * DOM 节点属性更新操作
+   *
    * @private
    * @param {object} lastProps
    * @param {object} nextProps
@@ -943,7 +971,10 @@ ReactDOMComponent.Mixin = {
     var propKey;
     var styleName;
     var styleUpdates;
+    // 当一个旧的属性不在新的属性集合里时，需要删除
     for (propKey in lastProps) {
+      // 1. 如果新属性里有，或者propKey 是在原型上的则直接跳过，
+      // 这样剩下的都是不在新属性集合里的，属于删除
       if (
         nextProps.hasOwnProperty(propKey) ||
         !lastProps.hasOwnProperty(propKey) ||
@@ -951,6 +982,7 @@ ReactDOMComponent.Mixin = {
       ) {
         continue;
       }
+      // 2. 从 DOM 删除不必要的样式
       if (propKey === STYLE) {
         var lastStyle = this._previousStyleCopy;
         for (styleName in lastStyle) {
@@ -965,6 +997,7 @@ ReactDOMComponent.Mixin = {
           // Only call deleteListener if there was a listener previously or
           // else willDeleteListener gets called when there wasn't actually a
           // listener (e.g., onClick={null})
+          // 这里的事件监听的属性需要去掉监听，针对当前的节点取消事件代理
           deleteListener(this, propKey);
         }
       } else if (isCustomComponent(this._tag, lastProps)) {
@@ -975,14 +1008,18 @@ ReactDOMComponent.Mixin = {
         DOMProperty.properties[propKey] ||
         DOMProperty.isCustomAttribute(propKey)
       ) {
+        // 从 DOM 上删除不必要的属性
         DOMPropertyOperations.deleteValueForProperty(getNode(this), propKey);
       }
     }
+
+    // 新的属性写到 DOM 节点上
     for (propKey in nextProps) {
       var nextProp = nextProps[propKey];
       var lastProp = propKey === STYLE
         ? this._previousStyleCopy
         : lastProps != null ? lastProps[propKey] : undefined;
+      // 不在新属性中，或与旧属性相同，则跳过
       if (
         !nextProps.hasOwnProperty(propKey) ||
         nextProp === lastProp ||
@@ -990,6 +1027,8 @@ ReactDOMComponent.Mixin = {
       ) {
         continue;
       }
+
+      // 在 DOM 上写入新样式（更新样式）
       if (propKey === STYLE) {
         if (nextProp) {
           if (__DEV__) {
@@ -1006,6 +1045,7 @@ ReactDOMComponent.Mixin = {
         }
         if (lastProp) {
           // Unset styles on `lastProp` but not on `nextProp`.
+          // 在旧样式中且不在新样式中，清除该样式
           for (styleName in lastProp) {
             if (
               lastProp.hasOwnProperty(styleName) &&
@@ -1016,6 +1056,7 @@ ReactDOMComponent.Mixin = {
             }
           }
           // Update styles that changed since `lastProp`.
+          // 既在旧样式中也在新样式中，且不相同，更新该样式
           for (styleName in nextProp) {
             if (
               nextProp.hasOwnProperty(styleName) &&
@@ -1027,16 +1068,20 @@ ReactDOMComponent.Mixin = {
           }
         } else {
           // Relies on `updateStylesByID` not mutating `styleUpdates`.
+          // 不存在旧样式，直接写入新样式
           styleUpdates = nextProp;
         }
       } else if (registrationNameModules.hasOwnProperty(propKey)) {
         if (nextProp) {
+          // 添加事件监听的属性
           enqueuePutListener(this, propKey, nextProp, transaction);
         } else if (lastProp) {
           deleteListener(this, propKey);
         }
+        // 添加新的属性，或者是更新旧的同名属性
       } else if (isCustomComponent(this._tag, nextProps)) {
         if (!RESERVED_PROPS.hasOwnProperty(propKey)) {
+          // setValueForAttribute 更新属性
           DOMPropertyOperations.setValueForAttribute(
             getNode(this),
             propKey,
@@ -1054,10 +1099,12 @@ ReactDOMComponent.Mixin = {
         if (nextProp != null) {
           DOMPropertyOperations.setValueForProperty(node, propKey, nextProp);
         } else {
+          // 如果更新为 null 或 undefined，则执行删除属性操作
           DOMPropertyOperations.deleteValueForProperty(node, propKey);
         }
       }
     }
+    // 如果 styleUpdates 不为空，则设置新样式
     if (styleUpdates) {
       CSSPropertyOperations.setValueForStyles(
         getNode(this),
@@ -1077,6 +1124,7 @@ ReactDOMComponent.Mixin = {
    * @param {object} context
    */
   _updateDOMChildren: function(lastProps, nextProps, transaction, context) {
+    // 初始化
     var lastContent = CONTENT_TYPES[typeof lastProps.children]
       ? lastProps.children
       : null;
@@ -1100,15 +1148,18 @@ ReactDOMComponent.Mixin = {
     var lastHasContentOrHtml = lastContent != null || lastHtml != null;
     var nextHasContentOrHtml = nextContent != null || nextHtml != null;
     if (lastChildren != null && nextChildren == null) {
+      // 旧节点存在，而新节点不存在，说明当前节点在更新后被删除了
       this.updateChildren(null, transaction, context);
     } else if (lastHasContentOrHtml && !nextHasContentOrHtml) {
+      // 说明当前内容在更新后被删除了
       this.updateTextContent('');
       if (__DEV__) {
         ReactInstrumentation.debugTool.onSetChildren(this._debugID, []);
       }
     }
-
+    // 新节点存在
     if (nextContent != null) {
+      // 更新内容
       if (lastContent !== nextContent) {
         this.updateTextContent('' + nextContent);
         if (__DEV__) {
@@ -1116,6 +1167,7 @@ ReactDOMComponent.Mixin = {
         }
       }
     } else if (nextHtml != null) {
+      // 更新属性标识
       if (lastHtml !== nextHtml) {
         this.updateMarkup('' + nextHtml);
       }
@@ -1126,7 +1178,7 @@ ReactDOMComponent.Mixin = {
       if (__DEV__) {
         setAndValidateContentChildDev.call(this, null);
       }
-
+      // 更新子节点 (diff)
       this.updateChildren(nextChildren, transaction, context);
     }
   },
@@ -1183,6 +1235,7 @@ ReactDOMComponent.Mixin = {
         break;
     }
 
+    // 卸载组件、清除事件监听、清空标识
     this.unmountChildren(safely);
     ReactDOMComponentTree.uncacheNode(this);
     EventPluginHub.deleteAllListeners(this);

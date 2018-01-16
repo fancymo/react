@@ -177,6 +177,8 @@ var ReactElement = function(type, key, ref, self, source, owner, props) {
 /**
  * Create and return a new ReactElement of the given type.
  * See https://facebook.github.io/react/docs/top-level-api.html#react.createelement
+ * createElement 做了简单的参数袖子，返回一个 ReactElement 实例对象。
+ * 也就是虚拟元素的实例
  */
 ReactElement.createElement = function(type, config, children) {
   var propName;
@@ -189,6 +191,7 @@ ReactElement.createElement = function(type, config, children) {
   var self = null;
   var source = null;
 
+  // 存在 config，则提取里面的内容
   if (config != null) {
     if (hasValidRef(config)) {
       ref = config.ref;
@@ -200,6 +203,7 @@ ReactElement.createElement = function(type, config, children) {
     self = config.__self === undefined ? null : config.__self;
     source = config.__source === undefined ? null : config.__source;
     // Remaining properties are added to a new props object
+    // 复制 config 里的内容到 props（如 id, className etc.）
     for (propName in config) {
       if (
         hasOwnProperty.call(config, propName) &&
@@ -212,6 +216,8 @@ ReactElement.createElement = function(type, config, children) {
 
   // Children can be more than one argument, and those are transferred onto
   // the newly allocated props object.
+  // 处理 children，全部挂载到 props 的 children 属性上，如果只有一个参数，直接复制给 children
+  // 否则做合并处理
   var childrenLength = arguments.length - 2;
   if (childrenLength === 1) {
     props.children = children;
@@ -229,6 +235,7 @@ ReactElement.createElement = function(type, config, children) {
   }
 
   // Resolve default props
+  // 如果某个 prop 为空且存在默认的 prop，则将默认的 prop 赋值给当前的 prop
   if (type && type.defaultProps) {
     var defaultProps = type.defaultProps;
     for (propName in defaultProps) {
@@ -255,6 +262,7 @@ ReactElement.createElement = function(type, config, children) {
       }
     }
   }
+  // 返回一个 ReactElement 实例对象
   return ReactElement(
     type,
     key,
