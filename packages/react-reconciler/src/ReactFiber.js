@@ -66,9 +66,12 @@ export type Fiber = {|
   // break this out into a separate object to avoid copying so much to the
   // alternate versions of the tree. We put this on a single object for now to
   // minimize the number of objects created during the initial render.
-  // 一个实例被一个组件的多个版本共享
+  // 一个实例被一个组件的多个版本共享，
+  // 可以很容易地将其拆分为一个单独的对象，以避免将如此多的内容复制到树的其他版本。
+  // 目前，将其放在单个对象上，最小化初始呈现过程中创建的对象数。
 
   // Tag identifying the type of fiber.
+  // 标识 Fiber
   tag: TypeOfWork,
 
   // Unique identifier of this child.
@@ -93,6 +96,7 @@ export type Fiber = {|
   return: Fiber | null,
 
   // Singly Linked List Tree Structure.
+  // 单链表树结构
   child: Fiber | null,
   sibling: Fiber | null,
   index: number,
@@ -106,9 +110,11 @@ export type Fiber = {|
   memoizedProps: any, // The props used to create the output.
 
   // A queue of state updates and callbacks.
+  // 状态更新和回调的队列
   updateQueue: UpdateQueue<any> | null,
 
   // The state used to create the output
+  // 用于创建输出的状态
   memoizedState: any,
 
   // Bitfield that describes properties about the fiber and its subtree. E.g.
@@ -117,6 +123,7 @@ export type Fiber = {|
   // parent. Additional flags can be set at creation time, but after than the
   // value should remain unchanged throughout the fiber's lifetime, particularly
   // before its child fibers are created.
+  // 描述 fiber 和 子树的属性
   internalContextTag: TypeOfInternalContext,
 
   // Effect
@@ -128,11 +135,15 @@ export type Fiber = {|
   // The first and last fiber with side-effect within this subtree. This allows
   // us to reuse a slice of the linked list when we reuse the work done within
   // this fiber.
+  // 允许重用链表的片段
   firstEffect: Fiber | null,
   lastEffect: Fiber | null,
 
   // Represents a time in the future by which this work should be completed.
   // This is also used to quickly determine if a subtree has no pending changes.
+  // 到期时间
+  // 标识 work 应该完成的时间
+  // 也用于快速确定子树是否没有挂起的更改
   expirationTime: ExpirationTime,
 
   // This is a pooled version of a Fiber. Every fiber that gets updated will
@@ -208,14 +219,18 @@ function FiberNode(
 // 1) Nobody should add any instance methods on this. Instance methods can be
 //    more difficult to predict when they get optimized and they are almost
 //    never inlined properly in static compilers.
+//    不应该添加实例方法，当他们b被优化，在静态编译器机会不会正确的内联，实例方法会变得难以预测
 // 2) Nobody should rely on `instanceof Fiber` for type testing. We should
 //    always know when it is a fiber.
+//    不应该依赖于 instanceof Fiber
 // 3) We might want to experiment with using numeric keys since they are easier
 //    to optimize in a non-JIT environment.
+//    希望尝试使用数字键，因为它们在非JIT环境中更容易优化
 // 4) We can easily go from a constructor to a createFiber object literal if that
 //    is faster.
 // 5) It should be easy to port this to a C struct and keep a C implementation
 //    compatible.
+//    将其移植到C结构并保持C实现的兼容性应该很容易。
 const createFiber = function(
   tag: TypeOfWork,
   pendingProps: mixed,
