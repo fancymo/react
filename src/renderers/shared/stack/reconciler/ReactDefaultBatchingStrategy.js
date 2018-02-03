@@ -41,6 +41,7 @@ Object.assign(ReactDefaultBatchingStrategyTransaction.prototype, Transaction, {
 var transaction = new ReactDefaultBatchingStrategyTransaction();
 
 var ReactDefaultBatchingStrategy = {
+  // 是否处于批量更新模式
   isBatchingUpdates: false,
 
   /**
@@ -56,6 +57,7 @@ var ReactDefaultBatchingStrategy = {
     if (alreadyBatchingUpdates) {
       return callback(a, b, c, d, e);
     } else {
+      // 事务
       return transaction.perform(callback, null, a, b, c, d, e);
     }
   },

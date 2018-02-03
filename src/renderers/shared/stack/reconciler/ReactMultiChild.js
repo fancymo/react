@@ -119,6 +119,7 @@ function makeTextContent(textContent) {
  */
 function enqueue(queue, update) {
   if (update) {
+    // 如果有更新则存入 queue
     queue = queue || [];
     queue.push(update);
   }
@@ -373,6 +374,7 @@ var ReactMultiChild = {
         transaction,
         context,
       );
+      // 如果不存在 nextChildren 和 prevChildren 则不做 diff 处理
       if (!nextChildren && !prevChildren) {
         return;
       }
@@ -380,6 +382,7 @@ var ReactMultiChild = {
       var name;
       // `nextIndex` will increment for each child in `nextChildren`, but
       // `lastIndex` will be the last index visited in `prevChildren`.
+      // lastIndex 是 prevChildren 中最后的索引，nextIndex 是 nextChildrn 中每个节点的索引
       var nextIndex = 0;
       var lastIndex = 0;
       // `nextMountIndex` will increment for each newly mounted child.
@@ -392,6 +395,7 @@ var ReactMultiChild = {
         var prevChild = prevChildren && prevChildren[name];
         var nextChild = nextChildren[name];
         if (prevChild === nextChild) {
+          // 移动节点
           updates = enqueue(
             updates,
             this.moveChild(prevChild, lastPlacedNode, nextIndex, lastIndex),
@@ -402,9 +406,11 @@ var ReactMultiChild = {
           if (prevChild) {
             // Update `lastIndex` before `_mountIndex` gets unset by unmounting.
             lastIndex = Math.max(prevChild._mountIndex, lastIndex);
+            // 通过便利 removedNodes 删除子节点 prevChild
             // The `removedNodes` loop below will actually remove the child.
           }
           // The child must be instantiated before it's mounted.
+          // 初始化并创建节点
           updates = enqueue(
             updates,
             this._mountChildAtIndex(
@@ -422,6 +428,7 @@ var ReactMultiChild = {
         lastPlacedNode = ReactReconciler.getHostNode(nextChild);
       }
       // Remove children that are no longer present.
+      // 如果父节点不存在，则将子节点全部移除
       for (name in removedNodes) {
         if (removedNodes.hasOwnProperty(name)) {
           updates = enqueue(
@@ -430,6 +437,7 @@ var ReactMultiChild = {
           );
         }
       }
+      // 如果存在更新，则处理更新
       if (updates) {
         processQueue(this, updates);
       }
@@ -455,6 +463,7 @@ var ReactMultiChild = {
 
     /**
      * Moves a child component to the supplied index.
+     * 移动节点
      *
      * @param {ReactComponent} child Component to move.
      * @param {number} toIndex Destination index of the element.

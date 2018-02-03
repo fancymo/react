@@ -21,6 +21,7 @@ var setTextContent = require('setTextContent');
 function getNodeAfter(parentNode, node) {
   // Special case for text components, which return [open, close] comments
   // from getHostNode.
+  // 文本组件的返回格式 [open, close] comments，需要做特殊处理
   if (Array.isArray(node)) {
     node = node[1];
   }
@@ -46,10 +47,12 @@ var insertChildAt = createMicrosoftUnsafeLocalFunction(function(
   parentNode.insertBefore(childNode, referenceNode);
 });
 
+// 插入新节点的操作
 function insertLazyTreeChildAt(parentNode, childTree, referenceNode) {
   DOMLazyTree.insertTreeBefore(parentNode, childTree, referenceNode);
 }
 
+// 移动已有节点的操作
 function moveChild(parentNode, childNode, referenceNode) {
   if (Array.isArray(childNode)) {
     moveDelimitedText(parentNode, childNode[0], childNode[1], referenceNode);
@@ -58,6 +61,7 @@ function moveChild(parentNode, childNode, referenceNode) {
   }
 }
 
+// 移除已有节点的操作
 function removeChild(parentNode, childNode) {
   if (Array.isArray(childNode)) {
     var closingComment = childNode[1];
@@ -68,6 +72,7 @@ function removeChild(parentNode, childNode) {
   parentNode.removeChild(childNode);
 }
 
+// 文本组件需要去除 openingComment 和 closingComment，取得其中的 node
 function moveDelimitedText(
   parentNode,
   openingComment,
@@ -176,9 +181,11 @@ var DOMChildrenOperations = {
       )._debugID;
     }
 
+    // 处理新增的节点、移动的节点以及需要移除的节点
     for (var k = 0; k < updates.length; k++) {
       var update = updates[k];
       switch (update.type) {
+        // 插入新的节点
         case 'INSERT_MARKUP':
           insertLazyTreeChildAt(
             parentNode,
@@ -196,6 +203,7 @@ var DOMChildrenOperations = {
             });
           }
           break;
+        // 需要移动的节点
         case 'MOVE_EXISTING':
           moveChild(
             parentNode,
@@ -230,6 +238,7 @@ var DOMChildrenOperations = {
             });
           }
           break;
+        // 需要删除的节点
         case 'REMOVE_NODE':
           removeChild(parentNode, update.fromNode);
           if (__DEV__) {
